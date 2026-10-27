@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>رحلة الوسائط المتعددة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* المتغيرات وتصميم الأساسيات */
+        :root {
+            --primary: #1E3A8A; /* أزرق بحري */
+            --secondary: #0F172A; /* كحلي داكن */
+            --gold: #FBBF24; /* ذهبي */
+            --text-light: #F8FAFC;
+            --glass-bg: rgba(15, 23, 42, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --success: #10B981;
+            --danger: #EF4444;
+            --safe-bottom: 80px;
+        }
+
+        .focus-mode {
+            --primary: #020617;
+            --secondary: #000000;
+            --glass-bg: rgba(0, 0, 0, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--secondary);
+            color: var(--text-light);
+            overflow-x: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.5s ease;
+        }
+
+        /* الخلفية المتحركة (البحر والسفينة) */
+        #ocean-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+            overflow: hidden;
+            transition: opacity 0.5s ease;
+        }
+
+        .focus-mode #ocean-background {
+            background: #020617;
+        }
+
+        /* النجوم / السحب الخفيفة */
+        .stars {
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 50%;
+            background: transparent url('data:image/svg+xml;utf8,<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="1" fill="white" opacity="0.3"/><circle cx="150" cy="80" r="1.5" fill="white" opacity="0.5"/><circle cx="80" cy="150" r="1" fill="white" opacity="0.2"/></svg>') repeat;
+            animation: moveClouds 100s linear infinite;
+        }
+
+        /* السفينة */
+        .ship-container {
+            position: absolute;
+            bottom: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: floatShip 4s ease-in-out infinite;
+            z-index: 2;
+        }
+        
+        .ship-svg {
+            width: 150px;
+            height: auto;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+        }
+
+        /* الأمواج */
+        .waves {
+            position: absolute;
+            bottom: 0;
+            width: 200%;
+            height: 35%;
+            display: flex;
+            z-index: 3;
+        }
+
+        .wave {
+            position: absolute;
+            bottom: 0;
+            width: 200%;
+            height: 100px;
+            background-repeat: repeat-x;
+            background-size: 50% 100%;
+        }
+
+        .wave-back {
+            background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V120H0Z" fill="%231E3A8A" opacity="0.6"/></svg>');
+            animation: waveMove 15s linear infinite;
+            bottom: 20px;
+        }
+
+        .wave-front {
+            background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V120H0Z" fill="%230F172A" opacity="0.9"/></svg>');
+            animation: waveMove 10s linear infinite reverse;
+        }
+
+        @keyframes moveClouds { from { background-position: 0 0; } to { background-position: -1000px 0; } }
+        @keyframes floatShip { 0%, 100% { transform: translate(-50%, 0) rotate(-2deg); } 50% { transform: translate(-50%, 15px) rotate(2deg); } }
+        @keyframes waveMove { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        /* إخفاء الحركة في وضع التركيز أو عند الإيقاف */
+        .stop-animations * {
+            animation-play-state: paused !important;
+        }
+        .focus-mode .ship-container, .focus-mode .waves, .focus-mode .stars {
+            opacity: 0.1;
+        }
+
+        /* الهيكل الرئيسي (Layout) */
+        header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-title { font-size: 1.2rem; font-weight: 700; color: var(--gold); }
+        
+        .controls button {
+            background: none; border: none; color: white;
+            font-size: 1.2rem; margin-right: 15px; cursor: pointer;
+            transition: color 0.3s;
+        }
+        .controls button:hover { color: var(--gold); }
+        .controls button.active { color: var(--gold); }
+
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: var(--safe-bottom);
+            scroll-behavior: smooth;
+        }
+
+        /* Glassmorphism Cards */
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Typography */
+        h1, h2, h3 { color: var(--gold); margin-bottom: 15px; line-height: 1.4; }
+        h1 { font-size: 1.8rem; }
+        h2 { font-size: 1.4rem; border-bottom: 2px solid rgba(251, 191, 36, 0.3); padding-bottom: 8px; display: inline-block;}
+        p { line-height: 1.8; margin-bottom: 15px; font-size: 1.05rem; }
+        ul, ol { margin-right: 25px; margin-bottom: 15px; line-height: 1.8; }
+        li { margin-bottom: 8px; }
+        
+        /* علامات مميزة (Tags) */
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            margin-left: 5px;
+        }
+        .tag-memorize { background: rgba(239, 68, 68, 0.2); color: #FCA5A5; border: 1px solid #EF4444; }
+        .tag-understand { background: rgba(16, 185, 129, 0.2); color: #6EE7B7; border: 1px solid #10B981; }
+        .tag-exam { background: rgba(251, 191, 36, 0.2); color: #FCD34D; border: 1px solid #FBBF24; }
+
+        /* الأزرار */
+        .btn {
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-secondary { background: rgba(255,255,255,0.1); box-shadow: none; border: 1px solid rgba(255,255,255,0.2); }
+
+        /* شريط التنقل السفلي */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            padding-bottom: env(safe-area-inset-bottom, 10px);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none; font-size: 0.8rem;
+            cursor: pointer; transition: color 0.3s;
+            width: 25%;
+        }
+        .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; }
+        .nav-item.active { color: var(--gold); }
+
+        /* شريط التقدم */
+        .progress-container { width: 100%; background: rgba(255,255,255,0.1); border-radius: 10px; height: 8px; margin-top: 15px; overflow: hidden;}
+        .progress-bar { height: 100%; background: var(--gold); border-radius: 10px; width: 0%; transition: width 0.5s ease; }
+
+        /* خريطة الدروس */
+        .lesson-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer; transition: background 0.2s;
+        }
+        .lesson-item:hover { background: rgba(255,255,255,0.05); }
+        .lesson-item:last-child { border-bottom: none; }
+        .lesson-status { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center;}
+        .lesson-status.completed { background: var(--gold); }
+        .lesson-status.completed::after { content: '✓'; color: var(--secondary); font-weight: bold; font-size: 14px;}
+
+        /* بطاقات الحفظ (Flashcards) */
+        .flashcard-container { perspective: 1000px; width: 100%; height: 250px; margin-bottom: 20px;}
+        .flashcard {
+            width: 100%; height: 100%; position: relative;
+            transition: transform 0.6s; transform-style: preserve-3d; cursor: pointer;
+        }
+        .flashcard.is-flipped { transform: rotateY(180deg); }
+        .flashcard-face {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px; text-align: center;
+            border-radius: 16px; border: 1px solid var(--glass-border);
+        }
+        .flashcard-front { background: rgba(30, 58, 138, 0.8); }
+        .flashcard-back { background: rgba(16, 185, 129, 0.8); transform: rotateY(180deg); }
+        
+        /* الأسئلة (Quiz) */
+        .option-btn {
+            display: block; width: 100%; text-align: right;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px;
+            font-size: 1rem; cursor: pointer; transition: all 0.2s;
+        }
+        .option-btn:disabled { cursor: default; }
+        .option-btn.correct { background: rgba(16, 185, 129, 0.3); border-color: var(--success); }
+        .option-btn.wrong { background: rgba(239, 68, 68, 0.3); border-color: var(--danger); }
+        .explanation { display: none; margin-top: 15px; padding: 15px; background: rgba(251, 191, 36, 0.1); border-right: 4px solid var(--gold); border-radius: 5px; font-size: 0.9rem;}
+
+        /* رسالة الترحيب والشاشة الرئيسية */
+        .hero-section { text-align: center; padding: 40px 10px; }
+        .stat-box { display: flex; justify-content: space-around; margin-top: 30px; }
+        .stat { text-align: center; }
+        .stat-value { font-size: 2rem; font-weight: 800; color: var(--gold); }
+        .stat-label { font-size: 0.9rem; color: rgba(255,255,255,0.7); }
+
+        /* شاشات الكمبيوتر */
+        @media (min-width: 768px) {
+            body { align-items: center; }
+            header, main, .bottom-nav { width: 100%; max-width: 600px; }
+            .bottom-nav { border-radius: 20px 20px 0 0; }
+        }
+
+        /* الملاحة بين الدروس */
+        .lesson-nav { display: flex; justify-content: space-between; margin-top: 20px; }
+        .lesson-nav .btn { width: 48%; }
+
+        /* التوافق مع SVG (Icons) */
+        svg { display: inline-block; vertical-align: middle; }
+    </style>
+</head>
+<body>
+
+    <!-- الخلفية السينمائية البحرية -->
+    <div id="ocean-background">
+        <div class="stars"></div>
+        <div class="ship-container">
+            <!-- أيقونة سفينة SVG -->
+            <svg class="ship-svg" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <path d="M472,360c-23.7,0-45.7-9-63.5-24.1c-32.9,28-76.4,32.7-113.8,11.8c-26.6,18.7-58.1,23.3-89.2,12.7 c-28.7,21.8-64.8,28.2-100.2,16.5C85.5,392.2,56.7,399.7,24,399.7c-8.8,0-16,7.2-16,16s7.2,16,16,16c39.6,0,74.8-13.4,101.4-38.3 c31,23.6,69.5,31.7,107,21.8c27,19.3,59.8,25.7,92.2,17.4c33.9,23.9,74.8,29.9,112.5,15.7c21.2,17.7,47.7,27.4,74.9,27.4 c8.8,0,16-7.2,16-16S480.8,360,472,360z" fill="#FFFFFF" opacity="0.4"/>
+                <path d="M451.9,298.5L344.6,126.8c-4.2-6.8-11.6-11-19.7-11H256V48c0-8.8-7.2-16-16-16s-16,7.2-16,16v67.8H95.1 c-8.1,0-15.5,4.2-19.7,11l-63.6,102c-5,8.1-4.7,18.4,1,26.2c5.6,7.8,14.8,12.5,24.4,12.5h397.6c9.6,0,18.8-4.7,24.4-12.5 C456.6,316.9,456.9,306.6,451.9,298.5z M327.4,147.8l94.1,150.6h-117V147.8z M272,147.8h33.4v150.6H272V147.8z M240,147.8v150.6 h-33.4V147.8H240z M68.5,298.4L156,158.1h32.6v140.3H68.5z" fill="#FBBF24"/>
+                <path d="M488,448c-39.6,0-74.8-13.4-101.4-38.3c-31,23.6-69.5,31.7-107,21.8c-27,19.3-59.8,25.7-92.2,17.4 c-33.9,23.9-74.8,29.9-112.5,15.7c-21.2,17.7-47.7,27.4-74.9,27.4c-8.8,0-16,7.2-16,16s7.2,16,16,16c23.7,0,45.7-9,63.5-24.1 c32.9,28,76.4,32.7,113.8,11.8c26.6,18.7,58.1,23.3,89.2,12.7c28.7,21.8,64.8,28.2,100.2,16.5c19.8,15.3,48.6,22.8,81.3,22.8 c8.8,0,16-7.2,16-16S496.8,448,488,448z" fill="#FFFFFF" opacity="0.6"/>
+            </svg>
+        </div>
+        <div class="waves">
+            <div class="wave wave-back"></div>
+            <div class="wave wave-front"></div>
+        </div>
+    </div>
+
+    <!-- الشريط العلوي -->
+    <header>
+        <div class="header-title">مقدمة الوسائط المتعددة</div>
+        <div class="controls">
+            <button id="btn-sound" onclick="toggleSound()" title="الصوت">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+            </button>
+            <button id="btn-animation" onclick="toggleAnimation()" title="إيقاف/تشغيل الحركة">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            </button>
+            <button id="btn-focus" onclick="toggleFocusMode()" title="وضع التركيز">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm1-11h-2v3H8v2h3v3h2v-3h3v-2h-3V8z"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main id="app-container">
+        <!-- سيتم حقن المحتوى هنا بواسطة JavaScript -->
+    </main>
+
+    <!-- شريط التنقل السفلي -->
+    <nav class="bottom-nav">
+        <a class="nav-item active" onclick="navigate('home')">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            الرئيسية
+        </a>
+        <a class="nav-item" onclick="navigate('map')">
+            <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+            الدروس
+        </a>
+        <a class="nav-item" onclick="navigate('quiz')">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            الاختبارات
+        </a>
+        <a class="nav-item" onclick="navigate('flashcards')">
+            <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM10 9h8v2h-8zm0 3h4v2h-4zm0-6h8v2h-8z"/></svg>
+            الملخص
+        </a>
+    </nav>
+
+    <script>
+        /* -----------------------------------------------------------
+           بيانات المادة العلمية (مستخرجة من ملف الفصل الأول.pptx)
+        ----------------------------------------------------------- */
+        const courseData = {
+            lessons: [
+                {
+                    id: 1,
+                    title: "ما هي الوسائط المتعددة؟",
+                    content: `
+                        <span class="tag tag-memorize">تعريف أساسي</span>
+                        <p>الوسائط المتعددة (Multimedia) هي دمج أو مزيج من: النصوص، والرسوم الفنية، والصوت، والرسوم المتحركة، والفيديو. يتم تقديمها باستخدام الكمبيوتر أو وسيلة إلكترونية.</p>
+                        <p>كما تُعرّف بأنها دمج الوسائط المستمرة (مثل الصوت والفيديو) مع الوسائط المتقطعة (مثل النصوص والصور) لنقل المعلومات الرقمية للمستخدم.</p>
+                        <h3>مما يتكون المصطلح؟</h3>
+                        <ul>
+                            <li><strong>Multi:</strong> كلمة لاتينية تعني "عديد" أو "متعدد".</li>
+                            <li><strong>Media:</strong> صيغة الجمع لكلمة Medium، وتعني "الوسط" أو "وسيلة توزيع المعلومات".</li>
+                        </ul>
+                    `
+                },
+                {
+                    id: 2,
+                    title: "النص التشعبي والوسائط التشعبية",
+                    content: `
+                        <span class="tag tag-understand">مفهوم مهم</span>
+                        <span class="tag tag-exam">متوقع في الامتحان</span>
+                        <h3>النص التشعبي (HyperText)</h3>
+                        <p>هو نص يحتوي على روابط (Links) تؤدي إلى نصوص أخرى. التنقل فيه <strong>غير خطّي</strong> (Non-linear)، حيث ينتقل القارئ فوراً للمادة ذات الصلة بالنقر على نقاط الاتصال (Hot spots).</p>
+                        <h3>الوسائط التشعبية (HyperMedia)</h3>
+                        <p>توسيع لمفهوم النص التشعبي، فهي لا تقتصر على النصوص، بل تتضمن وسائط أخرى مثل الصور والرسومات، وخاصة الوسائط المستمرة كالصوت والفيديو.</p>
+                        <div class="card" style="background: rgba(251, 191, 36, 0.1); border-color: var(--gold);">
+                            <strong>💡 التفاعلية:</strong> تصبح الوسائط المتعددة "تفاعلية" عندما يُمنح المستخدم التحكم في عناصرها. وتُسمى "وسائط تشعبية" عندما يُوفر للمستخدم هيكل مترابط للتنقل.
+                        </div>
+                    `
+                },
+                {
+                    id: 3,
+                    title: "تخصصات مطوري الوسائط المتعددة",
+                    content: `
+                        <p>مطور الوسائط المتعددة هو الشخص الذي ينشئ ويعالج الرسومات، الصوت، والنصوص لإنتاج برنامج متكامل. من أهم مهامهم: معرفة متطلبات العميل، إعداد مخططات انسيابية (Flow Diagrams)، وكتابة الأكواد.</p>
+                        <h3>أهم التخصصات:</h3>
+                        <ol>
+                            <li><strong>المبرمج (Programmer):</strong> يدمج الصور والنصوص ويطبق الهيكل البرمجي.</li>
+                            <li><strong>مصمم الرسومات (Graphic Designer):</strong> يصمم الواجهات ويدير إنتاج الرسومات.</li>
+                            <li><strong>محرر الفيديو والصوت:</strong> يحرر الصوت والصورة ويتحكم بسرعة العرض والمؤثرات.</li>
+                            <li><strong>المصمم التعليمي (Instructional Designer):</strong> يصمم المنتجات التعليمية وأدوات التقييم (مثل ما نقوم به في هذا الموقع!).</li>
+                        </ol>
+                    `
+                },
+                {
+                    id: 4,
+                    title: "التفاعلية وعناصرها",
+                    content: `
+                        <span class="tag tag-understand">الفهم العميق</span>
+                        <p>التفاعلية (Interactivity) هي قدرة المستخدم على التفاعل مع التطبيق. تتكون من 6 عناصر رئيسية:</p>
+                        <ul>
+                            <li><strong>التغذية الراجعة (Feedback):</strong> إخبار المتعلم بأخطائه وإنجازاته في اللحظة المناسبة.</li>
+                            <li><strong>التحكم (Control):</strong> المبادرة باختيار كيف ومتى يتعلمون.</li>
+                            <li><strong>الإبداع (Creativity):</strong> المشاركة في إنشاء شيء يمنح شعوراً بالملكية.</li>
+                            <li><strong>الإنتاجية (Productivity):</strong> تمكين المستخدم من إنتاج محتوى.</li>
+                            <li><strong>الاتصالات (Communications):</strong> تواصل الجمهور مع بعضهم البعض.</li>
+                            <li><strong>التكيف (Adaptivity):</strong> تغير التجربة لتلبية احتياجات المستخدم ومهاراته.</li>
+                        </ul>
+                    `
+                },
+                {
+                    id: 5,
+                    title: "تصنيف وخصائص الوسائط",
+                    content: `
+                        <span class="tag tag-exam">مقارنات هامة</span>
+                        <h3>تصنيف الوسائط:</h3>
+                        <ul>
+                            <li><strong>متقطعة (Discrete):</strong> غير معتمدة على الزمن (Time Independent). مثل: النصوص، الصور.</li>
+                            <li><strong>مستمرة (Continuous):</strong> معتمدة على الزمن (Time Dependent). مثل: الصوت، الفيديو.</li>
+                        </ul>
+                        <h3>التفاعلية في العرض:</h3>
+                        <ul>
+                            <li><strong>غير الخطية (التفاعلية):</strong> المستخدم يتحكم بالعرض (مثل ألعاب الكمبيوتر).</li>
+                            <li><strong>الخطية (السلبية):</strong> لا يوجد تحكم للمستخدم (مثل مشاهدة فيلم).</li>
+                        </ul>
+                        <h3>خصائص نظام الوسائط الرقمية:</h3>
+                        <p>معالجة الوسائط (المتقطعة والمستمرة)، استقلالية الوسائط، التمثيل الرقمي، التحكم بواسطة الكمبيوتر، التكامل، والتفاعلية.</p>
+                    `
+                },
+                {
+                    id: 6,
+                    title: "أنواع وسائط (Attributes of Media)",
+                    content: `
+                        <span class="tag tag-memorize">حفظ المصطلحات التقنية</span>
+                        <ol>
+                            <li><strong>وسائط الإدراك (Perception):</strong> كيف نستقبل المعلومات (سمعية، بصرية).</li>
+                            <li><strong>وسائط التمثيل (Representation):</strong> كيف تُرمّز داخل الكمبيوتر:
+                                <ul>
+                                    <li>النصوص: ASCII (8-bit لتمثيل 256 رمز)</li>
+                                    <li>الصور: JPEG</li>
+                                    <li>الفيديو: MPEG</li>
+                                    <li>الصوت: PCM</li>
+                                </ul>
+                            </li>
+                            <li><strong>وسائط العرض (Presentation):</strong> أدوات الإخراج/الإدخال (شاشة، مكبر صوت).</li>
+                            <li><strong>وسائط التخزين (Storage):</strong> أشرطة، أقراص مرنة، أقراص ضوئية.</li>
+                            <li><strong>وسائط النقل (Transmission):</strong> كابلات، قمر صناعي.</li>
+                            <li><strong>وسائط تبادل المعلومات (Exchange):</strong> وسائط قابلة للإزالة (ورق، قرص مرن) أو وسائط تبادل (ألياف ضوئية).</li>
+                        </ol>
+                    `
+                }
+            ],
+            quizzes: [
+                { q: "الوسائط التي لا يتأثر محتواها بمرور الزمن (Time Independent) تُسمى:", options: ["الوسائط المستمرة", "الوسائط المتقطعة", "الوسائط التشعبية", "الوسائط الخطية"], correct: 1, explanation: "الوسائط المتقطعة (مثل النصوص والصور) لا تعتمد على الزمن في عرضها." },
+                { q: "معيار الترميز المستخدم للنصوص والذي يستخدم 8 بت هو:", options: ["JPEG", "MPEG", "PCM", "ASCII"], correct: 3, explanation: "ASCII هو الرمز الأمريكي القياسي لتبادل المعلومات ويستخدم لترميز النصوص." },
+                { q: "أي من التالي يُعتبر مثالاً على التفاعلية (غير الخطية)؟", options: ["مشاهدة فيلم فيديو", "ألعاب الكمبيوتر", "الاستماع للراديو", "قراءة كتاب مطبوع"], correct: 1, explanation: "ألعاب الكمبيوتر تسمح للمستخدم النهائي بالتحكم في مسار العرض." },
+                { q: "إخبار المتعلم بالأخطاء التي ارتكبها في اللحظة المناسبة هو تطبيق لعنصر:", options: ["التحكم", "التغذية الراجعة", "الإنتاجية", "التكيف"], correct: 1, explanation: "التغذية الراجعة (Feedback) تُعلم المستخدم بأدائه فوراً لتحسين التعلم." },
+                { q: "صيغة الجمع للكلمة اللاتينية Medium تعني:", options: ["متعدد", "الوسط أو المركز", "الزمن", "الشاشة"], correct: 1, explanation: "كلمة Media تعني الوسط، وهي وسائل توزيع المعلومات وتمثيلها." }
+            ],
+            flashcards: [
+                { front: "HyperText", back: "نص غير خطّي يحتوي على روابط تؤدي إلى نصوص أخرى." },
+                { front: "HyperMedia", back: "وسائط تشعبية تتضمن نصوصاً، صوراً، صوتاً وفيديو مع روابط للتنقل." },
+                { front: "Discrete Media", back: "وسائط متقطعة غير معتمدة على الزمن مثل الصور والنصوص." },
+                { front: "Continuous Media", back: "وسائط مستمرة معتمدة على الزمن مثل الفيديو والصوت." },
+                { front: "JPEG", back: "معيار ترميز يستخدم لتمثيل الصور (Image) داخل الكمبيوتر." }
+            ]
+        };
+
+        /* -----------------------------------------------------------
+           حالة التطبيق (State Management)
+        ----------------------------------------------------------- */
+        let state = {
+            currentTab: 'home',
+            completedLessons: JSON.parse(localStorage.getItem('mm_completedLessons')) || [],
+            settings: {
+                animation: true,
+                focus: false,
+                sound: false
+            }
+        };
+
+        /* -----------------------------------------------------------
+           نظام الصوت (Synthesized Audio) - لا يحتاج ملفات خارجية
+        ----------------------------------------------------------- */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(frequency, type, duration) {
+            if (!state.settings.sound) return;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = type;
+            oscillator.frequency.value = frequency;
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            oscillator.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSuccessSound() { playTone(600, 'sine', 0.5); setTimeout(() => playTone(800, 'sine', 0.5), 100); }
+        function playErrorSound() { playTone(300, 'sawtooth', 0.4); setTimeout(() => playTone(250, 'sawtooth', 0.4), 150); }
+        function playClickSound() { playTone(400, 'sine', 0.1); }
+
+        /* -----------------------------------------------------------
+           إعدادات الواجهة (Settings)
+        ----------------------------------------------------------- */
+        function toggleAnimation() {
+            state.settings.animation = !state.settings.animation;
+            document.body.classList.toggle('stop-animations', !state.settings.animation);
+            document.getElementById('btn-animation').classList.toggle('active', !state.settings.animation);
+        }
+
+        function toggleFocusMode() {
+            state.settings.focus = !state.settings.focus;
+            document.body.classList.toggle('focus-mode', state.settings.focus);
+            document.getElementById('btn-focus').classList.toggle('active', state.settings.focus);
+            // إيقاف الحركة تلقائياً في وضع التركيز
+            if(state.settings.focus && state.settings.animation) {
+                toggleAnimation();
+            } else if (!state.settings.focus && !state.settings.animation) {
+                toggleAnimation();
+            }
+        }
+
+        function toggleSound() {
+            state.settings.sound = !state.settings.sound;
+            document.getElementById('btn-sound').classList.toggle('active', state.settings.sound);
+            if(state.settings.sound && audioCtx.state === 'suspended') audioCtx.resume();
+            playClickSound();
+        }
+
+        /* -----------------------------------------------------------
+           محرك التنقل والتصيير (Router & Renderer)
+        ----------------------------------------------------------- */
+        const appContainer = document.getElementById('app-container');
+
+        function navigate(tab) {
+            playClickSound();
+            state.currentTab = tab;
+            
+            // تحديث الشريط السفلي
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            const activeNav = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick').includes(tab));
+            if(activeNav) activeNav.classList.add('active');
+
+            // التمرير لأعلى
+            appContainer.scrollTop = 0;
+
+            // تصيير المحتوى بناء على القسم
+            switch(tab) {
+                case 'home': renderHome(); break;
+                case 'map': renderMap(); break;
+                case 'quiz': renderQuizMenu(); break;
+                case 'flashcards': renderFlashcards(); break;
+            }
+        }
+
+        // 1. الرئيسية
+        function renderHome() {
+            const progress = courseData.lessons.length > 0 ? Math.round((state.completedLessons.length / courseData.lessons.length) * 100) : 0;
+            appContainer.innerHTML = `
+                <div class="card hero-section">
+                    <h1>مرحباً بك في رحلة التعلم 🌊</h1>
+                    <p>استعد للغوص في أعماق "مقدمة في نظم الوسائط المتعددة". هذه الرحلة مصممة لتسهيل الفهم والحفظ.</p>
+                    
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: ${progress}%"></div>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 0.9rem;">نسبة إنجازك: ${progress}%</p>
+                    
+                    <div class="stat-box">
+                        <div class="stat">
+                            <div class="stat-value">${courseData.lessons.length}</div>
+                            <div class="stat-label">دروس</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${courseData.quizzes.length}</div>
+                            <div class="stat-label">أسئلة</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${courseData.flashcards.length}</div>
+                            <div class="stat-label">مصطلحات</div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn" onclick="navigate('map')">
+                        ابدأ الرحلة الآن
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg>
+                    </button>
+                </div>
+                <div class="card">
+                    <h2>💡 نصيحة للدراسة</h2>
+                    <p>استخدم <span style="color:var(--gold)">وضع التركيز</span> (الأيقونة بالأعلى) لإخفاء المؤثرات البصرية أثناء القراءة العميقة، ثم انتقل لـ <span style="color:var(--gold)">الاختبارات</span> لتثبيت المعلومة.</p>
+                </div>
+            `;
+        }
+
+        // 2. خريطة الدروس
+        function renderMap() {
+            let html = `<div class="card"><h2>خريطة الدروس</h2><p>اختر المحطة التي تريد الوصول إليها:</p><div>`;
+            courseData.lessons.forEach((lesson, index) => {
+                const isCompleted = state.completedLessons.includes(lesson.id);
+                html += `
+                    <div class="lesson-item" onclick="renderLesson(${lesson.id})">
+                        <div>
+                            <strong>الدرس ${index + 1}:</strong> ${lesson.title}
+                        </div>
+                        <div class="lesson-status ${isCompleted ? 'completed' : ''}"></div>
+                    </div>
+                `;
+            });
+            html += `</div></div>`;
+            appContainer.innerHTML = html;
+        }
+
+        // 3. عرض الدرس
+        function renderLesson(id) {
+            playClickSound();
+            const lesson = courseData.lessons.find(l => l.id === id);
+            const index = courseData.lessons.indexOf(lesson);
+            
+            // تحديث الإنجاز
+            if (!state.completedLessons.includes(id)) {
+                state.completedLessons.push(id);
+                localStorage.setItem('mm_completedLessons', JSON.stringify(state.completedLessons));
+            }
+
+            appContainer.innerHTML = `
+                <div class="card">
+                    <button class="btn btn-secondary" style="width: auto; padding: 5px 15px; margin-bottom: 15px;" onclick="navigate('map')">← عودة للخريطة</button>
+                    <h2>الدرس ${index + 1}: ${lesson.title}</h2>
+                    <div style="margin-top: 15px;">
+                        ${lesson.content}
+                    </div>
+                </div>
+                
+                <div class="lesson-nav">
+                    ${index > 0 ? `<button class="btn btn-secondary" onclick="renderLesson(${courseData.lessons[index-1].id})">السابق</button>` : '<div></div>'}
+                    ${index < courseData.lessons.length - 1 ? `<button class="btn" onclick="renderLesson(${courseData.lessons[index+1].id})">التالي</button>` : `<button class="btn" onclick="navigate('quiz')">اختبر نفسك</button>`}
+                </div>
+            `;
+            appContainer.scrollTop = 0;
+        }
+
+        // 4. نظام الاختبارات
+        let currentQuizIndex = 0;
+        let score = 0;
+
+        function renderQuizMenu() {
+            currentQuizIndex = 0;
+            score = 0;
+            appContainer.innerHTML = `
+                <div class="card" style="text-align: center;">
+                    <h2>تحدي المعرفة 🎯</h2>
+                    <p>يحتوي هذا الاختبار على ${courseData.quizzes.length} أسئلة مستخرجة من المادة. هل أنت مستعد لاختبار معلوماتك؟</p>
+                    <button class="btn" onclick="renderQuizQuestion()">ابدأ الاختبار</button>
+                </div>
+            `;
+        }
+
+        function renderQuizQuestion() {
+            if (currentQuizIndex >= courseData.quizzes.length) {
+                renderQuizResult();
+                return;
+            }
+
+            const q = courseData.quizzes[currentQuizIndex];
+            let optionsHtml = '';
+            q.options.forEach((opt, idx) => {
+                optionsHtml += `<button class="option-btn" onclick="checkAnswer(${idx}, ${q.correct})">${opt}</button>`;
+            });
+
+            appContainer.innerHTML = `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 15px; font-size: 0.9rem; color: var(--gold);">
+                        <span>السؤال ${currentQuizIndex + 1} من ${courseData.quizzes.length}</span>
+                        <span>النقاط: ${score}</span>
+                    </div>
+                    <h3 style="font-size: 1.2rem; margin-bottom: 20px;">${q.q}</h3>
+                    <div id="options-container">
+                        ${optionsHtml}
+                    </div>
+                    <div id="explanation-box" class="explanation">
+                        <strong>التفسير: </strong> ${q.explanation}
+                    </div>
+                    <button id="next-q-btn" class="btn" style="display:none; margin-top: 20px;" onclick="nextQuestion()">السؤال التالي</button>
+                </div>
+            `;
+        }
+
+        window.checkAnswer = function(selected, correct) {
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(btn => btn.disabled = true); // منع النقر المتعدد
+
+            if (selected === correct) {
+                btns[selected].classList.add('correct');
+                score++;
+                playSuccessSound();
+            } else {
+                btns[selected].classList.add('wrong');
+                btns[correct].classList.add('correct');
+                playErrorSound();
+            }
+
+            document.getElementById('explanation-box').style.display = 'block';
+            document.getElementById('next-q-btn').style.display = 'flex';
+        };
+
+        window.nextQuestion = function() {
+            currentQuizIndex++;
+            renderQuizQuestion();
+        };
+
+        function renderQuizResult() {
+            const percent = Math.round((score / courseData.quizzes.length) * 100);
+            let msg = percent >= 80 ? "ممتاز! أنت قبطان ماهر 🚢" : "جيد، ولكن البحر مليء بالأسرار، راجع الدروس 🌊";
+            
+            appContainer.innerHTML = `
+                <div class="card" style="text-align: center;">
+                    <h2>النتيجة النهائية</h2>
+                    <div style="font-size: 4rem; margin: 20px 0;">${percent}%</div>
+                    <p style="font-size: 1.2rem; color: var(--gold);">${msg}</p>
+                    <p>أجبت بشكل صحيح على ${score} من أصل ${courseData.quizzes.length} أسئلة.</p>
+                    <button class="btn" style="margin-top: 20px;" onclick="navigate('map')">العودة للدروس</button>
+                    <button class="btn btn-secondary" style="margin-top: 10px;" onclick="renderQuizMenu()">إعادة الاختبار</button>
+                </div>
+            `;
+        }
+
+        // 5. بطاقات الحفظ (الملخص التفاعلي)
+        function renderFlashcards() {
+            let cardsHtml = '';
+            courseData.flashcards.forEach((fc, idx) => {
+                cardsHtml += `
+                    <div class="flashcard-container" onclick="this.querySelector('.flashcard').classList.toggle('is-flipped'); playClickSound();">
+                        <div class="flashcard">
+                            <div class="flashcard-face flashcard-front">
+                                <span style="font-size:0.8rem; opacity:0.7; position:absolute; top:15px;">مصطلح (انقر للقلب)</span>
+                                <h2>${fc.front}</h2>
+                            </div>
+                            <div class="flashcard-face flashcard-back">
+                                <h3>التعريف</h3>
+                                <p>${fc.back}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            appContainer.innerHTML = `
+                <div class="card">
+                    <h2>بطاقات الحفظ السريعة 🗂️</h2>
+                    <p>انقر على البطاقة لقلبها وقراءة التعريف. طريقة ممتازة للمراجعة قبل الامتحان.</p>
+                </div>
+                ${cardsHtml}
+            `;
+        }
+
+        // تهيئة التطبيق عند التحميل
+        window.onload = () => {
+            navigate('home');
+        };
+
+    </script>
+</body>
+</html>
+
